@@ -1,8 +1,8 @@
-#description: Expands OS disk to maximum allowed volume size, useful when creating an image or VM with an OS disk size beyond 128GB.
-#execution mode: IndividualWithRestart
+#description: Expands OS disk to maximum allowed volume size, useful when creating an image or VM with an OS disk size beyond 128GB
+#execution mode: Individual
 #tags: ITaaS
 <#
-Expands OS disk to maximum allowed volume size, useful when increasing the size beyond 128GB.
+Expands OS disk to maximum allowed volume size, useful when increasing the size beyond 128GB
 #>
 
 $DiskCPartition = Get-Partition -DriveLetter "C"
