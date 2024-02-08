@@ -8,5 +8,8 @@ Expands OS disk to maximum allowed volume size, useful when increasing the size 
 $DiskCPartition = Get-Partition -DriveLetter "C"
 $DiskCPartitionSupportedSize = Get-PartitionSupportedSize -DriveLetter "C"
 if ($DiskCPartition.Size -lt $DiskCPartitionSupportedSize.SizeMax) {
+    Write-Output "Partition for 'C' drive partition is not maximum size, resizing partition"
     Resize-Partition -DriveLetter "C" -Size $DiskCPartitionSupportedSize.SizeMax
+} else {
+    Write-Output "Partition for 'C' drive is already at maximum size"
 }
