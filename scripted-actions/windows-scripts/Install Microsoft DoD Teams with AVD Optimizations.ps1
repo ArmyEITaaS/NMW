@@ -5,10 +5,17 @@
 Expands OS disk to maximum allowed volume size, useful when increasing the size beyond 128GB.
 #>
 
-$ErrorActionPreference = [System.Management.Automation.ActionPreference]::Stop
-
 try {
-    Write-Output "Starting Script - Install Microsoft Teams"
+    $PreviousVerbosePreference = $VerbosePreference
+    $VerbosePreference = [System.Management.Automation.ActionPreference]::Continue
+    $ErrorActionPreference = [System.Management.Automation.ActionPreference]::Stop
+
+    $StartDateTime = Get-Date
+    $StartDateTimeUTC = $StartDateTime.ToUniversalTime()
+
+    New-Item -Path "C:\Windows\temp\NerdioManagerLogs\ScriptedActions\msteamsdod" -ItemType Directory -Force | Out-Null
+    Start-Transcript -Path "C:\Windows\temp\NerdioManagerLogs\ScriptedActions\msteamsdod\ps_log.txt" -Append
+    Write-Output "Starting Script - Date/Time UTC $StartDateTimeUTC - Install Microsoft Teams DoD with AVD Optimizations"
 
     $TmpDirectoryPath = "C:\Temp"
     $BootstrapDirectoryPath = Join-Path -Path $TmpDirectoryPath -ChildPath "bootstrap-microsoft-teams-dod"
@@ -74,7 +81,11 @@ try {
         -FilePath msiexec.exe `
         -Args "/I $MicrosoftTeamsMsiFilePath /quiet /norestart /log teams.log ALLUSER=1 ALLUSERS=1"
 
-    Write-Output "Completed Script - Install Microsoft Teams"
+    $EndDateTime = Get-Date
+    $EndDateTimeUTC = $EndDateTime.ToUniversalTime()
+    Write-Output "Completed Script - Date/Time UTC $EndDateTimeUTC - Install Microsoft Teams DoD with AVD Optimizations"
 } finally {
     Remove-Item -Path $BootstrapDirectoryPath -Recurse -Force -ErrorAction SilentlyContinue
+    Stop-Transcript
+    $VerbosePreference = $PreviousVerbosePreference
 }
