@@ -5,9 +5,6 @@
     This script will assign the 'Reader' RBAC role to the VM system identity on the VM scope to allow self-read.
 #>
 
-Disable-AzContextAutosave -Scope Process | Out-Null
-Set-AzContext -SubscriptionId $AzureSubscriptionId | Out-Null
-
 $VM = Get-AzVM `
     -ResourceGroupName $AzureResourceGroupName `
     -Name $AzureVMName `
