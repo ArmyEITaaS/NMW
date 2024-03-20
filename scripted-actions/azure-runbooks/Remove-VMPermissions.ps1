@@ -1,13 +1,12 @@
 #description: Remove Reader RBAC role from the VM system identity on the VM scope, disallow self-read
 #tags: ITaaS
-
 <# Notes:
     This script will remove the 'Reader' RBAC role from the VM system identity on the VM scope to disallow self-read.
 #>
 
-Disable-AzContextAutosave -Scope Process | Out-Null
-Set-AzContext -SubscriptionId $AzureSubscriptionId | Out-Null
+$ErrorActionPreference = [System.Management.Automation.ActionPreference]::Stop
 
+Write-Output "Checking for VM '$AzureVMName' in resource group '$AzureResourceGroupName'"
 $VM = Get-AzVM `
     -ResourceGroupName $AzureResourceGroupName `
     -Name $AzureVMName `

@@ -1,10 +1,12 @@
 #description: Assign Reader RBAC role to the VM system identity on the VM scope, allow self-read
 #tags: ITaaS
-
 <# Notes:
     This script will assign the 'Reader' RBAC role to the VM system identity on the VM scope to allow self-read.
 #>
 
+$ErrorActionPreference = [System.Management.Automation.ActionPreference]::Stop
+
+Write-Output "Checking for VM '$AzureVMName' in resource group '$AzureResourceGroupName'"
 $VM = Get-AzVM `
     -ResourceGroupName $AzureResourceGroupName `
     -Name $AzureVMName `
