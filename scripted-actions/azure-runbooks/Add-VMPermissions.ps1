@@ -34,6 +34,10 @@ Write-Output "Found VM '$AzureVMName' in resource group '$AzureResourceGroupName
 #         -ErrorAction Stop | Out-Null
 # }
 
+if ([String]::IsNullOrWhiteSpace($VM.Identity.PrincipalId)) {
+    throw "VM '$AzureVMName' in resource group '$AzureResourceGroupName' does not have an identity"
+}
+
 Write-Output "Creating 'Reader' RBAC role for VM '$AzureVMName' on resource group '$AzureResourceGroupName'"
 New-AzRoleAssignment `
     -ApplicationId $VM.Identity.PrincipalId `
