@@ -18,29 +18,22 @@ if ($null -eq $VM) {
 }
 
 Write-Output "Found VM '$AzureVMName' in resource group '$AzureResourceGroupName'"
-# Write-Output "Checking if VM '$AzureVMName' has 'Reader' RBAC role on resource group '$AzureResourceGroupName'"
-# $ExistingVmResourceGroupReaderAssignment = Get-AzRoleAssignment `
-#     -ServicePrincipalName $VM.Identity.PrincipalId `
-#     -Scope $VM.Id `
-#     -RoleDefinitionName "Reader" `
-#     -ErrorAction SilentlyContinue
-
-# if (-Not $ExistingVmResourceGroupReaderAssignment) {
-#     Write-Output "Creating 'Reader' RBAC role for VM '$AzureVMName' on resource group '$AzureResourceGroupName'"
-#     New-AzRoleAssignment `
-#         -ApplicationId $VM.Identity.PrincipalId `
-#         -Scope $VM.Id `
-#         -RoleDefinitionName "Reader" `
-#         -ErrorAction Stop | Out-Null
-# }
-
 if ([String]::IsNullOrWhiteSpace($VM.Identity.PrincipalId)) {
     throw "VM '$AzureVMName' in resource group '$AzureResourceGroupName' does not have an identity"
 }
 
-Write-Output "Creating 'Reader' RBAC role for VM '$AzureVMName' on resource group '$AzureResourceGroupName'"
-New-AzRoleAssignment `
-    -ApplicationId $VM.Identity.PrincipalId `
+Write-Output "Checking if VM '$AzureVMName' has 'Reader' RBAC role on resource group '$AzureResourceGroupName'"
+$ExistingVmResourceGroupReaderAssignment = Get-AzRoleAssignment `
+    -ObjectId $VM.Identity.PrincipalId `
     -Scope $VM.Id `
     -RoleDefinitionName "Reader" `
-    -ErrorAction Stop | Out-Null
+    -ErrorAction SilentlyContinue
+
+if (-Not $ExistingVmResourceGroupReaderAssignment) {
+    Write-Output "Creating 'Reader' RBAC role for VM '$AzureVMName' on resource group '$AzureResourceGroupName'"
+    New-AzRoleAssignment `
+        -ObjectId $VM.Identity.PrincipalId `
+        -Scope $VM.Id `
+        -RoleDefinitionName "Reader" `
+        -ErrorAction Stop | Out-Null
+}
