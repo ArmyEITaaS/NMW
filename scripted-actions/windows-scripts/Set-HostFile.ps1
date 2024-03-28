@@ -9,12 +9,8 @@ $HostEntries = @{
     "INT01A" = @{
         "VA" = @(
             @{
-                IPAddress = "172.23.255.228"
-                FQDN      = "parmyavdvaint01fx1.blob.core.usgovcloudapi.net"
-            }
-            @{
                 IPAddress = "172.23.255.229"
-                FQDN      = "parmyavdvaint01fx1.file.core.usgovcloudapi.net"
+                FQDN      = "parmyavdvaint01fslogix1.file.core.usgovcloudapi.net"
             }
             @{
                 IPAddress = "52.127.58.160"
@@ -25,12 +21,8 @@ $HostEntries = @{
     "INT01B" = @{
         "VA" = @(
             @{
-                IPAddress = "172.23.255.244"
-                FQDN      = "parmyavdvaint01fx1.blob.core.usgovcloudapi.net"
-            }
-            @{
                 IPAddress = "172.23.255.245"
-                FQDN      = "parmyavdvaint01fx1.file.core.usgovcloudapi.net"
+                FQDN      = "parmyavdvaint01fslogix1.file.core.usgovcloudapi.net"
             }
             @{
                 IPAddress = "52.127.58.160"
