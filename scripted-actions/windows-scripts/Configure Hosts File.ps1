@@ -1,4 +1,4 @@
-#description: Set Content of Hosts File
+#description: Configure Hosts File
 #execution mode: Combined
 #tags: ITaaS
 <#
