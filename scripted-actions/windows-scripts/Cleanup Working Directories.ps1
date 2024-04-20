@@ -1,5 +1,5 @@
 #description: Cleanup working directories
-#execution mode: Individual
+#execution mode: Combined
 #tags: ITaaS
 <#
 Cleanup working directories.
