@@ -15,6 +15,7 @@ $DesiredDnsIpAddresses = @(
 )
 
 ipconfig /renew
+ipconfig /flushdns
 ipconfig /all
 
 $AddressCount = 0
