@@ -104,13 +104,20 @@ Write-Output "Installing RD Infra Agent on VM Complete. Exit code=`$sts"
 Write-output `$log
 "@
 
-$VM = Get-AzVM -VMName $azureVMName
+$VM = Get-AzVM -VMName $AzureVMName -ResourceGroupName $AzureResourceGroupName -ErrorAction SilentlyContinue
+if ($null -eq $VM) {
+    throw "Failed to find VM '$AzureVMName' in resource group '$AzureResourceGroupName'"
+}
 
-$Script | Out-File ".\Reinstall-AVDAgent-$($vm.Name).ps1"
+$Script | Out-File ".\Reinstall-AVDAgent-$($VM.Name).ps1"
 
 # Execute local script on remote VM
-Write-Output "Execute reinstall script on remote VM"
-$RunCommand = Invoke-AzVMRunCommand -ResourceGroupName $vm.ResourceGroupName -VMName "$AzureVMName" -CommandId 'RunPowerShellScript' -ScriptPath ".\Reinstall-AVDAgent-$($vm.Name).ps1"
+Write-Output "Execute reinstall script on remote VM '$AzureVMName'"
+$RunCommand = Invoke-AzVMRunCommand `
+    -ResourceGroupName $AzureResourceGroupName `
+    -VMName $AzureVMName `
+    -CommandId 'RunPowerShellScript' `
+    -ScriptPath ".\Reinstall-AVDAgent-$($VM.Name).ps1"
 
 #check for errors
 $errors = $RunCommand.Value | Where-Object Code -EQ 'ComponentStatus/StdErr/succeeded'
@@ -120,8 +127,8 @@ if ($errors.message) {
 Write-Output "Output from RunCommand:"
 $RunCommand.Value | Where-Object Code -EQ 'ComponentStatus/StdOut/succeeded' | Select-Object message -ExpandProperty message
 
-Write-Output "Restarting VM after reinstall"
-$vm | Restart-AzVM
+Write-Output "Restarting VM '$AzureVMName' after reinstall"
+$VM | Restart-AzVM
 
 # re-assigning user
 if ($SessionHost.assigneduser) {
