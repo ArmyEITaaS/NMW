@@ -83,6 +83,8 @@ Foreach (`$guid in `$AgentGuids) {
             -ResourceGroupName $HostPoolResourceGroupName `
             -HostPoolName $HostPoolName `
             -Name $SessionHostName
+    } else {
+        Write-Output "Failed to find session host '$SessionHostName' in host pool '$HostPoolName'"
     }
 
     $RegistrationKey = Get-AzWvdRegistrationInfo -ResourceGroupName $HostPoolResourceGroupName -HostPoolName $HostPoolName
