@@ -41,19 +41,26 @@ Foreach (`$guid in `$AgentGuids) {
     `$avd_uninstall_status = Start-Process -FilePath "msiexec.exe" -ArgumentList "/x `$guid", "/quiet", "/qn", "/norestart", "/passive", "/l* `$wvdAppsLogsPath\RDAgentUninstall.log" -Wait -Passthru
     `$sts = `$avd_uninstall_status.ExitCode
     Write-Output "Uninstalling AVD Agetnt on VM Complete. Exit code=`$sts"
-
 }
 "@
 
-    $VM = Get-AzVM -VMName $azureVMName
+    $VM = Get-AzVM `
+        -VMName $AzureVMName `
+        -ErrorAction SilentlyContinue
 
-    $Script | Out-File ".\Uninstall-AVDAgent-$($vm.Name).ps1"
+    if ($null -eq $VM) {
+        throw "Failed to find VM '$AzureVMName' in resource group '$AzureResourceGroupName'"
+    }
 
-    # Execute local script on remote VM
+    $Script | Out-File ".\Uninstall-AVDAgent-${AzureVMName}.ps1"
+
     Write-Output "Execute uninstall script on remote VM"
-    $RunCommand = Invoke-AzVMRunCommand -ResourceGroupName $vm.ResourceGroupName -VMName "$AzureVMName" -CommandId 'RunPowerShellScript' -ScriptPath ".\Uninstall-AVDAgent-$($vm.Name).ps1"
+    $RunCommand = Invoke-AzVMRunCommand `
+        -ResourceGroupName $VM.ResourceGroupName `
+        -VMName $AzureVMName `
+        -CommandId 'RunPowerShellScript' `
+        -ScriptPath ".\Uninstall-AVDAgent-${AzureVMName}.ps1"
 
-    #Check for errors
     $errors = $RunCommand.Value | Where-Object Code -EQ 'ComponentStatus/StdErr/succeeded'
     if ($errors.message) {
         Throw "Error when uninstalling RD components. $($errors.message)"
@@ -115,17 +122,15 @@ Write-output `$log
         throw "Failed to find VM '$AzureVMName' in resource group '$AzureResourceGroupName'"
     }
 
-    $Script | Out-File ".\Reinstall-AVDAgent-$($VM.Name).ps1"
+    $Script | Out-File ".\Reinstall-AVDAgent-${AzureVMName}.ps1"
 
-    # Execute local script on remote VM
     Write-Output "Execute reinstall script on remote VM '$AzureVMName'"
     $RunCommand = Invoke-AzVMRunCommand `
         -ResourceGroupName $VM.ResourceGroupName `
         -VMName $AzureVMName `
         -CommandId 'RunPowerShellScript' `
-        -ScriptPath ".\Reinstall-AVDAgent-$($VM.Name).ps1"
+        -ScriptPath ".\Reinstall-AVDAgent-${AzureVMName}.ps1"
 
-    #check for errors
     $errors = $RunCommand.Value | Where-Object Code -EQ 'ComponentStatus/StdErr/succeeded'
     if ($errors.message) {
         Throw "Error when reinstalling RD agent. $($errors.message)"
@@ -136,7 +141,6 @@ Write-output `$log
     Write-Output "Restarting VM '$AzureVMName' after reinstall"
     $VM | Restart-AzVM
 
-    # re-assigning user
     if ($SessionHost.assigneduser) {
         Update-AzWvdSessionHost `
             -HostPoolName $hostpoolname `
