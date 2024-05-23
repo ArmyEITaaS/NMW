@@ -94,7 +94,6 @@ Foreach (`$guid in `$AgentGuids) {
 
     $RegistrationToken = $RegistrationKey.token
 
-
     $Script = @"
 `$tempFolder = [environment]::GetEnvironmentVariable('TEMP', 'Machine')
 `$logsFolderName = "NMWLogs"
@@ -149,14 +148,14 @@ Write-output `$log
     Write-Output "Restarting VM '$AzureVMName' after reinstall"
     $VM | Restart-AzVM
 
-    if ($SessionHost.assigneduser) {
-        Write-Output "Re-assigning previously assigned user on VM '$AzureVMName'"
-        Update-AzWvdSessionHost `
-            -HostPoolName $hostpoolname `
-            -Name ($SessionHost.name -split '/')[1] `
-            -AssignedUser $SessionHost.AssignedUser `
-            -ResourceGroupName $HostPoolResourceGroupName
-    }
+    # if ($SessionHost.assigneduser) {
+    #     Write-Output "Re-assigning previously assigned user on VM '$AzureVMName'"
+    #     Update-AzWvdSessionHost `
+    #         -HostPoolName $hostpoolname `
+    #         -Name ($SessionHost.name -split '/')[1] `
+    #         -AssignedUser $SessionHost.AssignedUser `
+    #         -ResourceGroupName $HostPoolResourceGroupName
+    # }
 } catch {
     $ErrorScript = $PSItem.InvocationInfo.ScriptName
     $ErrorScriptLine = "$($PSItem.InvocationInfo.ScriptLineNumber):$($PSItem.InvocationInfo.OffsetInLine)"
