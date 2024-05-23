@@ -13,12 +13,15 @@ v1 (Fall 2019) Azure WVD.
 
 #>
 
-Write-Output "Getting Host Pool Information"
-$HostPool = Get-AzResource -ResourceId $HostpoolID
-$HostPoolResourceGroupName = $HostPool.ResourceGroupName
-$HostPoolName = $Hostpool.Name
+$ErrorActionPreference = [System.Management.Automation.ActionPreference]::Stop
 
-$Script = @"
+try {
+    Write-Output "Getting Host Pool Information"
+    $HostPool = Get-AzResource -ResourceId $HostpoolID
+    $HostPoolResourceGroupName = $HostPool.ResourceGroupName
+    $HostPoolName = $Hostpool.Name
+
+    $Script = @"
 `$tempFolder = [environment]::GetEnvironmentVariable('TEMP', 'Machine')
 `$logsFolderName = "NMWLogs"
 `$logsPath = "`$tempFolder\`$logsFolderName"
@@ -42,43 +45,43 @@ Foreach (`$guid in `$AgentGuids) {
 }
 "@
 
-$VM = Get-AzVM -VMName $azureVMName
+    $VM = Get-AzVM -VMName $azureVMName
 
-$Script | Out-File ".\Uninstall-AVDAgent-$($vm.Name).ps1"
+    $Script | Out-File ".\Uninstall-AVDAgent-$($vm.Name).ps1"
 
-# Execute local script on remote VM
-Write-Output "Execute uninstall script on remote VM"
-$RunCommand = Invoke-AzVMRunCommand -ResourceGroupName $vm.ResourceGroupName -VMName "$AzureVMName" -CommandId 'RunPowerShellScript' -ScriptPath ".\Uninstall-AVDAgent-$($vm.Name).ps1"
+    # Execute local script on remote VM
+    Write-Output "Execute uninstall script on remote VM"
+    $RunCommand = Invoke-AzVMRunCommand -ResourceGroupName $vm.ResourceGroupName -VMName "$AzureVMName" -CommandId 'RunPowerShellScript' -ScriptPath ".\Uninstall-AVDAgent-$($vm.Name).ps1"
 
-#Check for errors
-$errors = $RunCommand.Value | Where-Object Code -EQ 'ComponentStatus/StdErr/succeeded'
-if ($errors.message) {
-    Throw "Error when uninstalling RD components. $($errors.message)"
-}
-Write-Output "Output from RunCommand:"
-$RunCommand.Value | Where-Object Code -EQ 'ComponentStatus/StdOut/succeeded' | Select-Object message -ExpandProperty message
+    #Check for errors
+    $errors = $RunCommand.Value | Where-Object Code -EQ 'ComponentStatus/StdErr/succeeded'
+    if ($errors.message) {
+        Throw "Error when uninstalling RD components. $($errors.message)"
+    }
+    Write-Output "Output from RunCommand:"
+    $RunCommand.Value | Where-Object Code -EQ 'ComponentStatus/StdOut/succeeded' | Select-Object message -ExpandProperty message
 
-Write-Output "Restarting VM after uninstall"
-$vm | Restart-AzVM
+    Write-Output "Restarting VM after uninstall"
+    $vm | Restart-AzVM
 
-$SessionHost = Get-AzWvdSessionHost -HostPoolName $hostpoolname -ResourceGroupName $HostPoolResourceGroupName | Where-Object name -Match $azureVMName
-Remove-AzWvdSessionHost -ResourceGroupName $HostPoolResourceGroupName -HostPoolName $HostPoolName -Name ($SessionHost.name -split '/')[1]
-Write-Output "Removed session host from host pool"
+    $SessionHost = Get-AzWvdSessionHost -HostPoolName $hostpoolname -ResourceGroupName $HostPoolResourceGroupName | Where-Object name -Match $azureVMName
+    Remove-AzWvdSessionHost -ResourceGroupName $HostPoolResourceGroupName -HostPoolName $HostPoolName -Name ($SessionHost.name -split '/')[1]
+    Write-Output "Removed session host from host pool"
 
-$RegistrationKey = Get-AzWvdRegistrationInfo -ResourceGroupName $HostPoolResourceGroupName -HostPoolName $HostPoolName
-if (-not $RegistrationKey.Token) {
-    Write-Output "Generating new registration token for host pool '$HostPoolName'"
-    $RegistrationKey = New-AzWvdRegistrationInfo `
-        -ResourceGroupName $HostPoolResourceGroupName `
-        -HostPoolName $HostPoolName `
-        -ExpirationTime $((Get-Date).ToUniversalTime().AddDays(1).ToString('yyyy-MM-ddTHH:mm:ss.fffffffZ')) `
-        -DefaultProfile (Set-AzContext -Subscription $HostPool.SubscriptionId)
-}
+    $RegistrationKey = Get-AzWvdRegistrationInfo -ResourceGroupName $HostPoolResourceGroupName -HostPoolName $HostPoolName
+    if (-not $RegistrationKey.Token) {
+        Write-Output "Generating new registration token for host pool '$HostPoolName'"
+        $RegistrationKey = New-AzWvdRegistrationInfo `
+            -ResourceGroupName $HostPoolResourceGroupName `
+            -HostPoolName $HostPoolName `
+            -ExpirationTime $((Get-Date).ToUniversalTime().AddDays(1).ToString('yyyy-MM-ddTHH:mm:ss.fffffffZ')) `
+            -DefaultProfile (Set-AzContext -Subscription $HostPool.SubscriptionId)
+    }
 
-$RegistrationToken = $RegistrationKey.token
+    $RegistrationToken = $RegistrationKey.token
 
 
-$Script = @"
+    $Script = @"
 `$tempFolder = [environment]::GetEnvironmentVariable('TEMP', 'Machine')
 `$logsFolderName = "NMWLogs"
 `$logsPath = "`$tempFolder\`$logsFolderName"
@@ -104,40 +107,46 @@ Write-Output "Installing RD Infra Agent on VM Complete. Exit code=`$sts"
 Write-output `$log
 "@
 
-$VM = Get-AzVM `
-    -VMName $AzureVMName `
-    -ErrorAction SilentlyContinue
+    $VM = Get-AzVM `
+        -VMName $AzureVMName `
+        -ErrorAction SilentlyContinue
 
-if ($null -eq $VM) {
-    throw "Failed to find VM '$AzureVMName' in resource group '$AzureResourceGroupName'"
-}
+    if ($null -eq $VM) {
+        throw "Failed to find VM '$AzureVMName' in resource group '$AzureResourceGroupName'"
+    }
 
-$Script | Out-File ".\Reinstall-AVDAgent-$($VM.Name).ps1"
+    $Script | Out-File ".\Reinstall-AVDAgent-$($VM.Name).ps1"
 
-# Execute local script on remote VM
-Write-Output "Execute reinstall script on remote VM '$AzureVMName'"
-$RunCommand = Invoke-AzVMRunCommand `
-    -ResourceGroupName $VM.ResourceGroupName `
-    -VMName $AzureVMName `
-    -CommandId 'RunPowerShellScript' `
-    -ScriptPath ".\Reinstall-AVDAgent-$($VM.Name).ps1"
+    # Execute local script on remote VM
+    Write-Output "Execute reinstall script on remote VM '$AzureVMName'"
+    $RunCommand = Invoke-AzVMRunCommand `
+        -ResourceGroupName $VM.ResourceGroupName `
+        -VMName $AzureVMName `
+        -CommandId 'RunPowerShellScript' `
+        -ScriptPath ".\Reinstall-AVDAgent-$($VM.Name).ps1"
 
-#check for errors
-$errors = $RunCommand.Value | Where-Object Code -EQ 'ComponentStatus/StdErr/succeeded'
-if ($errors.message) {
-    Throw "Error when reinstalling RD agent. $($errors.message)"
-}
-Write-Output "Output from RunCommand:"
-$RunCommand.Value | Where-Object Code -EQ 'ComponentStatus/StdOut/succeeded' | Select-Object message -ExpandProperty message
+    #check for errors
+    $errors = $RunCommand.Value | Where-Object Code -EQ 'ComponentStatus/StdErr/succeeded'
+    if ($errors.message) {
+        Throw "Error when reinstalling RD agent. $($errors.message)"
+    }
+    Write-Output "Output from RunCommand:"
+    $RunCommand.Value | Where-Object Code -EQ 'ComponentStatus/StdOut/succeeded' | Select-Object message -ExpandProperty message
 
-Write-Output "Restarting VM '$AzureVMName' after reinstall"
-$VM | Restart-AzVM
+    Write-Output "Restarting VM '$AzureVMName' after reinstall"
+    $VM | Restart-AzVM
 
-# re-assigning user
-if ($SessionHost.assigneduser) {
-    Update-AzWvdSessionHost `
-        -HostPoolName $hostpoolname `
-        -Name ($SessionHost.name -split '/')[1] `
-        -AssignedUser $SessionHost.AssignedUser `
-        -ResourceGroupName $HostPoolResourceGroupName
+    # re-assigning user
+    if ($SessionHost.assigneduser) {
+        Update-AzWvdSessionHost `
+            -HostPoolName $hostpoolname `
+            -Name ($SessionHost.name -split '/')[1] `
+            -AssignedUser $SessionHost.AssignedUser `
+            -ResourceGroupName $HostPoolResourceGroupName
+    }
+} catch {
+    $ErrorScript = $PSItem.InvocationInfo.ScriptName
+    $ErrorScriptLine = "$($PSItem.InvocationInfo.ScriptLineNumber):$($PSItem.InvocationInfo.OffsetInLine)"
+    $ErrorMessage = "$($PSItem.Exception.Message) Error Script: $ErrorScript, Error Line: $ErrorScriptLine"
+    Write-Error -Message $ErrorMessage -Exception $PSItem.Exception
 }
