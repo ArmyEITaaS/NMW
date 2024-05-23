@@ -73,14 +73,17 @@ Foreach (`$guid in `$AgentGuids) {
     $VM | Restart-AzVM
 
     $SessionHost = Get-AzWvdSessionHost `
-        -HostPoolName $hostpoolname `
+        -HostPoolName $HostPoolName `
         -ResourceGroupName $HostPoolResourceGroupName | Where-Object name -Match $azureVMName
 
-    Remove-AzWvdSessionHost `
-        -ResourceGroupName $HostPoolResourceGroupName `
-        -HostPoolName $HostPoolName -Name ($SessionHost.name -split '/')[1]
-
-    Write-Output "Removed session host from host pool"
+    if ($null -ne $SessionHost) {
+        $SessionHostName = ($SessionHost.Name -split '/')[1]
+        Write-Output "Removing session host '$SessionHostName' from host pool '$HostPoolName'"
+        Remove-AzWvdSessionHost `
+            -ResourceGroupName $HostPoolResourceGroupName `
+            -HostPoolName $HostPoolName `
+            -Name $SessionHostName
+    }
 
     $RegistrationKey = Get-AzWvdRegistrationInfo -ResourceGroupName $HostPoolResourceGroupName -HostPoolName $HostPoolName
     if (-not $RegistrationKey.Token) {
