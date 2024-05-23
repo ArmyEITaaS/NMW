@@ -70,19 +70,21 @@ Foreach (`$guid in `$AgentGuids) {
     $RunCommand.Value | Where-Object Code -EQ 'ComponentStatus/StdOut/succeeded' | Select-Object message -ExpandProperty message
 
     Write-Output "Restarting VM '$AzureVMName' after uninstall"
-    $VM | Restart-AzVM
+    $VM | Restart-AzVM -DefaultProfile (Set-AzContext -Subscription $VM.Id.Split('/')[2])
 
     $SessionHost = Get-AzWvdSessionHost `
         -HostPoolName $HostPoolName `
-        -ResourceGroupName $HostPoolResourceGroupName | Where-Object name -Match $azureVMName
+        -ResourceGroupName $HostPoolResourceGroupName `
+        -DefaultProfile (Set-AzContext -Subscription $HostPool.SubscriptionId) | Where-Object name -Match $azureVMName
 
+    $SessionHostName = ($SessionHost.Name -split '/')[1]
     if ($null -ne $SessionHost) {
-        $SessionHostName = ($SessionHost.Name -split '/')[1]
         Write-Output "Removing session host '$SessionHostName' from host pool '$HostPoolName'"
         Remove-AzWvdSessionHost `
             -ResourceGroupName $HostPoolResourceGroupName `
             -HostPoolName $HostPoolName `
-            -Name $SessionHostName
+            -Name $SessionHostName `
+            -DefaultProfile (Set-AzContext -Subscription $HostPool.SubscriptionId)
     } else {
         Write-Output "Failed to find session host '$SessionHostName' in host pool '$HostPoolName'"
     }
@@ -151,16 +153,16 @@ Write-output `$log
     $RunCommand.Value | Where-Object Code -EQ 'ComponentStatus/StdOut/succeeded' | Select-Object message -ExpandProperty message
 
     Write-Output "Restarting VM '$AzureVMName' after reinstall"
-    $VM | Restart-AzVM
+    $VM | Restart-AzVM -DefaultProfile (Set-AzContext -Subscription $VM.Id.Split('/')[2])
 
-    # if ($SessionHost.assigneduser) {
-    #     Write-Output "Re-assigning previously assigned user on VM '$AzureVMName'"
-    #     Update-AzWvdSessionHost `
-    #         -HostPoolName $hostpoolname `
-    #         -Name ($SessionHost.name -split '/')[1] `
-    #         -AssignedUser $SessionHost.AssignedUser `
-    #         -ResourceGroupName $HostPoolResourceGroupName
-    # }
+    if ($SessionHost.assigneduser) {
+        Write-Output "Re-assigning previously assigned user on VM '$AzureVMName'"
+        Update-AzWvdSessionHost `
+            -HostPoolName $hostpoolname `
+            -Name ($SessionHost.name -split '/')[1] `
+            -AssignedUser $SessionHost.AssignedUser `
+            -ResourceGroupName $HostPoolResourceGroupName
+    }
 } catch {
     $ErrorScript = $PSItem.InvocationInfo.ScriptName
     $ErrorScriptLine = "$($PSItem.InvocationInfo.ScriptLineNumber):$($PSItem.InvocationInfo.OffsetInLine)"
