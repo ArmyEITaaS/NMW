@@ -104,7 +104,10 @@ Write-Output "Installing RD Infra Agent on VM Complete. Exit code=`$sts"
 Write-output `$log
 "@
 
-$VM = Get-AzVM -VMName $AzureVMName -ResourceGroupName $AzureResourceGroupName -ErrorAction SilentlyContinue
+$VM = Get-AzVM `
+    -VMName $AzureVMName `
+    -ErrorAction SilentlyContinue
+
 if ($null -eq $VM) {
     throw "Failed to find VM '$AzureVMName' in resource group '$AzureResourceGroupName'"
 }
