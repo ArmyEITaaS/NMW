@@ -44,6 +44,7 @@ Foreach (`$guid in `$AgentGuids) {
 }
 "@
 
+    Write-Output "Getting VM '$AzureVMName'"
     $VM = Get-AzVM `
         -VMName $AzureVMName `
         -ErrorAction SilentlyContinue
@@ -126,14 +127,6 @@ Write-Output "Installing RD Infra Agent on VM Complete. Exit code=`$sts"
 `$Log = get-content `$wvdAppsLogsPath\RDInfraAgentInstall.log
 Write-output `$log
 "@
-
-    $VM = Get-AzVM `
-        -VMName $AzureVMName `
-        -ErrorAction SilentlyContinue
-
-    if ($null -eq $VM) {
-        throw "Failed to find VM '$AzureVMName' in resource group '$AzureResourceGroupName'"
-    }
 
     $Script | Out-File ".\Reinstall-AVDAgent-${AzureVMName}.ps1"
 
