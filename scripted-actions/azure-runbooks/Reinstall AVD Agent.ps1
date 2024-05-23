@@ -117,7 +117,7 @@ $Script | Out-File ".\Reinstall-AVDAgent-$($VM.Name).ps1"
 # Execute local script on remote VM
 Write-Output "Execute reinstall script on remote VM '$AzureVMName'"
 $RunCommand = Invoke-AzVMRunCommand `
-    -ResourceGroupName $AzureResourceGroupName `
+    -ResourceGroupName $VM.ResourceGroupName `
     -VMName $AzureVMName `
     -CommandId 'RunPowerShellScript' `
     -ScriptPath ".\Reinstall-AVDAgent-$($VM.Name).ps1"
@@ -135,5 +135,9 @@ $VM | Restart-AzVM
 
 # re-assigning user
 if ($SessionHost.assigneduser) {
-    Update-AzWvdSessionHost -HostPoolName $hostpoolname -Name ($SessionHost.name -split '/')[1] -AssignedUser $SessionHost.AssignedUser -ResourceGroupName $HostPoolResourceGroupName
+    Update-AzWvdSessionHost `
+        -HostPoolName $hostpoolname `
+        -Name ($SessionHost.name -split '/')[1] `
+        -AssignedUser $SessionHost.AssignedUser `
+        -ResourceGroupName $HostPoolResourceGroupName
 }
