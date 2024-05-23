@@ -14,7 +14,6 @@ v1 (Fall 2019) Azure WVD.
 #>
 
 Write-Output "Getting Host Pool Information"
-$HostPoolSubscriptionId = $HostpoolID.Split('/')[2]
 $HostPool = Get-AzResource -ResourceId $HostpoolID
 $HostPoolResourceGroupName = $HostPool.ResourceGroupName
 $HostPoolName = $Hostpool.Name
@@ -68,13 +67,12 @@ Write-Output "Removed session host from host pool"
 
 $RegistrationKey = Get-AzWvdRegistrationInfo -ResourceGroupName $HostPoolResourceGroupName -HostPoolName $HostPoolName
 if (-not $RegistrationKey.Token) {
-    # Generate New Registration Token
-    Write-Output "Generate New Registration Token"
+    Write-Output "Generating new registration token for host pool '$HostPoolName'"
     $RegistrationKey = New-AzWvdRegistrationInfo `
         -ResourceGroupName $HostPoolResourceGroupName `
         -HostPoolName $HostPoolName `
         -ExpirationTime $((Get-Date).ToUniversalTime().AddDays(1).ToString('yyyy-MM-ddTHH:mm:ss.fffffffZ')) `
-        -SubscriptionId $HostPoolSubscriptionId
+        -DefaultProfile (Set-AzContext -Subscription $HostPool.SubscriptionId)
 }
 
 $RegistrationToken = $RegistrationKey.token
