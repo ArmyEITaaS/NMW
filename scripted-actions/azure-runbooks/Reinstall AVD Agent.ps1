@@ -54,12 +54,13 @@ Foreach (`$guid in `$AgentGuids) {
 
     $Script | Out-File ".\Uninstall-AVDAgent-${AzureVMName}.ps1"
 
-    Write-Output "Execute uninstall script on remote VM"
+    Write-Output "Execute uninstall script on remote VM '$AzureVMName'"
     $RunCommand = Invoke-AzVMRunCommand `
         -ResourceGroupName $VM.ResourceGroupName `
         -VMName $AzureVMName `
         -CommandId 'RunPowerShellScript' `
-        -ScriptPath ".\Uninstall-AVDAgent-${AzureVMName}.ps1"
+        -ScriptPath ".\Uninstall-AVDAgent-${AzureVMName}.ps1" `
+        -DefaultProfile (Set-AzContext -Subscription $VM.Id.Split('/')[2])
 
     $errors = $RunCommand.Value | Where-Object Code -EQ 'ComponentStatus/StdErr/succeeded'
     if ($errors.message) {
@@ -68,11 +69,17 @@ Foreach (`$guid in `$AgentGuids) {
     Write-Output "Output from RunCommand:"
     $RunCommand.Value | Where-Object Code -EQ 'ComponentStatus/StdOut/succeeded' | Select-Object message -ExpandProperty message
 
-    Write-Output "Restarting VM after uninstall"
-    $vm | Restart-AzVM
+    Write-Output "Restarting VM '$AzureVMName' after uninstall"
+    $VM | Restart-AzVM
 
-    $SessionHost = Get-AzWvdSessionHost -HostPoolName $hostpoolname -ResourceGroupName $HostPoolResourceGroupName | Where-Object name -Match $azureVMName
-    Remove-AzWvdSessionHost -ResourceGroupName $HostPoolResourceGroupName -HostPoolName $HostPoolName -Name ($SessionHost.name -split '/')[1]
+    $SessionHost = Get-AzWvdSessionHost `
+        -HostPoolName $hostpoolname `
+        -ResourceGroupName $HostPoolResourceGroupName | Where-Object name -Match $azureVMName
+
+    Remove-AzWvdSessionHost `
+        -ResourceGroupName $HostPoolResourceGroupName `
+        -HostPoolName $HostPoolName -Name ($SessionHost.name -split '/')[1]
+
     Write-Output "Removed session host from host pool"
 
     $RegistrationKey = Get-AzWvdRegistrationInfo -ResourceGroupName $HostPoolResourceGroupName -HostPoolName $HostPoolName
@@ -129,7 +136,8 @@ Write-output `$log
         -ResourceGroupName $VM.ResourceGroupName `
         -VMName $AzureVMName `
         -CommandId 'RunPowerShellScript' `
-        -ScriptPath ".\Reinstall-AVDAgent-${AzureVMName}.ps1"
+        -ScriptPath ".\Reinstall-AVDAgent-${AzureVMName}.ps1" `
+        -DefaultProfile (Set-AzContext -Subscription $VM.Id.Split('/')[2])
 
     $errors = $RunCommand.Value | Where-Object Code -EQ 'ComponentStatus/StdErr/succeeded'
     if ($errors.message) {
@@ -142,6 +150,7 @@ Write-output `$log
     $VM | Restart-AzVM
 
     if ($SessionHost.assigneduser) {
+        Write-Output "Re-assigning previously assigned user on VM '$AzureVMName'"
         Update-AzWvdSessionHost `
             -HostPoolName $hostpoolname `
             -Name ($SessionHost.name -split '/')[1] `
